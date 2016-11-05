@@ -1,4 +1,5 @@
-=Delta calibrator
+#Delta calibrator
+
 This program automatically calibrates delta 3d printer with Marlin RC7 firmware.
 
 Initial settings are loaded from the printer and new values are automatically written back.
