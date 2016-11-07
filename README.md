@@ -1,7 +1,7 @@
 #Delta calibrator
 
-This program automatically calibrates delta 3d printer running Marlin RC7
-firmware with custom addition (https://github.com/nzinov/Marlin/tree/RCBugFix).
+This program automatically calibrates delta 3d printer running Marlin RCBugFix
+firmware ~~with custom addition~~ got merged to official! (https://github.com/MarlinFirmware/Marlin/tree/RCBugFix).
 
 Initial settings are automatically loaded from the printer and new values are written back.
 
