@@ -5,7 +5,8 @@ firmware ~~with custom addition~~ got merged to official! (https://github.com/Ma
 
 Initial settings are automatically loaded from the printer and new values are written back.
 
-Implementation of parameters calculator has been taken from https://github.com/payala/DeltaTuner
+~~Implementation of parameters calculator has been taken from https://github.com/payala/DeltaTuner~~
+Calibrations is done using sympy for solving equations and scipy for lsq fit.
 
 Now the program is quite dirty and doesn't have any parameters.
 
