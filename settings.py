@@ -1,5 +1,4 @@
 import re
-from sympy import *
 
 
 BASE_HEIGHT = 185.1
@@ -17,10 +16,11 @@ class Settings:
         self.ex = ex
         self.ey = ey
         self.ez = ez
-        self.height_offset = height - BASE_HEIGHT
+        self.height_offset = 0
         self.probe_offset = 0
-        self.radius = height
+        self.radius = radius
         self.diagonal = diagonal
+        self.parsed = 0
 
     def prepare(self):
         self.ex = BASE_HEIGHT + self.height_offset + self.ex
@@ -29,14 +29,25 @@ class Settings:
 
     def parse(self, message):
         for comm in self.commands:
-            comm = re.sub("\{(.*?)\}", r"(?P<\1>[\d.-]+)", comm)
+            comm = re.sub(" ", r".*?", re.sub(r"\{(.*?)\}", r"(?P<\1>[\d.-]+)", comm))
             match = re.search(comm, message[:-1])
             if match:
-                self.__dict__.update(match.groupdict())
+                print comm
+                self.parsed += 1
+                d = match.groupdict()
+                for k, v in d.items():
+                    d[k] = float(v)
+                self.__dict__.update(d)
 
     def dump(self):
         self.ex = -BASE_HEIGHT - self.height_offset + self.ex
         self.ey = -BASE_HEIGHT - self.height_offset + self.ey
         self.ez = -BASE_HEIGHT - self.height_offset + self.ez
+        d = max(self.ex, self.ey, self.ez)
+        self.height_offset += d
+        self.ex -= d
+        self.ey -= d
+        self.ez -= d
+        
         for comm in self.commands:
-            yield comm.format(self.__dict__)
+            yield re.sub(r"\{(.*?)\}", r"{\1:.2f}", comm).format(**self.__dict__)

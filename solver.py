@@ -5,23 +5,25 @@ from settings import Settings
 import numpy
 
 class Solver:
-    def __init__(self, settings, optimize_for, probe_radius=10, n=10):
+    def __init__(self, settings, optimize_for, probe_radius=60, n=10):
         self.optimize_for = optimize_for
         self.probe_radius = probe_radius
         self.point_number = n
         self.settings = settings
         self.points = []
-        settings.prepare()
 
-    def fixate(self, expr, leave=None):
+    def fixate(self, expr, leave=[]):
         if leave is None:
             leave = []
         for prop in Model.properties:
             if prop not in leave:
                 expr = expr.subs(getattr(Model, prop), getattr(self.settings, prop))
-        props = [getattr(Model, prop) for prop in leave]
-        print props, expr
-        return lambdify(props, expr)
+        def f(*args):
+            my = expr
+            for arg, prop in zip(args, leave):
+                my = my.subs(getattr(Model, prop), arg)
+            return my.evalf()
+        return lambdify([getattr(Model, prop) for prop in leave], expr)
 
     def generate_points(self, step):
         points = []
@@ -35,20 +37,27 @@ class Solver:
     def fill_points(self, points):
         f = self.fixate(Model.ef_to_car, ["position"])
         try:
-            self.points = [f((x, y, z)) for x, y, z in points]
+            self.points = [f([x, y, z]) for x, y, z in points]
         except ValueError:
             print "Unreachable point"
 
     def target_function(self):
-        return self.fixate(Model.car_to_z, ["state"]+self.optimize_for)
+        f = self.fixate(Model.car_to_z, ["state"]+self.optimize_for)
+        def g(x, *args):
+            return [f(el, *args) for el in x]
+        return g
+
 
     def target_jacobian(self):
         param = Matrix([[getattr(Model, prop) for prop in self.optimize_for]])
-        print param
-        return self.fixate(Matrix([[Model.car_to_z]]).jacobian(param), ["state"]+self.optimize_for)
+        f = self.fixate(Matrix([[Model.car_to_z]]).jacobian(param), ["state"]+self.optimize_for)
+        def g(x, *args):
+            return [f(el, *args)[0] for el in x]
+        return g
 
     def optimize(self):
-        popt, pcov = curve_fit(self.target_function(), self.points, [0]*len(self.points), jac=self.target_jacobian()) 
+        param = [getattr(self.settings, prop) for prop in self.optimize_for]
+        popt, pconv = curve_fit(self.target_function(), self.points, [0]*len(self.points), param) 
         for prop, val in zip(self.optimize_for, popt):
             setattr(self.settings, prop, val)
         return numpy.diag(pconv)
