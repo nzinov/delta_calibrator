@@ -2,94 +2,56 @@
 from sys import stdin, stdout
 from time import sleep
 from printrun.printcore import printcore
-from reprapfirmware_lsq import Tuner
+from settings import Settings
+from solver import Solver
 import re
-offset = -6.03
-BASE_HEIGHT = 185.1
-core = printcore("/dev/kossel", 250000)
-diagonal = 0
-radius = 0
-height = 0
-xstop = 0
-ystop = 0
-zstop = 0
-xadj = 0
-yadj = 0
-zadj = 0
-probed_points = []
 
-
-def log(x):
-    if x.startswith("echo"):
-        stdout.write(x[len("echo:"):])
-
-m665 = re.compile("M665.*L([\d.-]+).*R([\d.-]+).*A([\d.-]+).*B([\d.-]+).*C([\d.-]+)")
-m666 = re.compile("M666.*X([\d.-]+).*Y([\d.-]+).*Z([\d.-]+)")
-m206 = re.compile("M206.*Z([\d.-]+)")
-m851 = re.compile("M851.*Z([\d.-]+)")
 g30 = re.compile("Bed.*X: ([\d.-]+).*Y: ([\d.-]+).*Z: ([\d.-]+)")
-probed = False
 
-def parse_settings(x):
-    global diagonal, radius, xadj, yadj, zadj, xstop, ystop, zstop, height, probed_points, probed, offset
-    x = x[:-1]
-    m = m665.search(x)
-    if m:
-        diagonal = float(m.group(1))
-        radius = float(m.group(2))
-        xadj = float(m.group(3))
-        yadj = float(m.group(4))
-        zadj = float(m.group(5))
-    m = m666.search(x)
-    if m:
-        xstop = float(m.group(1))
-        ystop = float(m.group(2))
-        zstop = float(m.group(3))
-    m = m206.search(x)
-    if m:
-        height = BASE_HEIGHT + float(m.group(1))
-    m = m851.search(x)
-    if m:
-        offset = float(m.group(1))
-    m = g30.search(x)
-    if m:
-        x = float(m.group(1))
-        y = float(m.group(2))
-        z = float(m.group(3))
-        probed_points.append(-(z + offset))
-        probed = True
-
-core.recvcb = parse_settings
-sleep(1)
-try:
-    for i in range(1):
-        core.send("M503")
-        core.send("G28")
+class Calibrator:
+    def __init__(self, optimize_for=[]):
+        self.core = printcore("/dev/kossel", 250000)
+        self.probed_points = []
+        self.settings = Settings()
+        self.optimize_for = optimize_for
         sleep(1)
-        print "Param:", diagonal, radius, height, xstop, ystop, zstop, xadj, yadj, zadj, offset
-        tuner = Tuner(diagonal, radius, height, xstop, ystop, zstop, xadj, yadj, zadj, num_factors=4, num_probe_points=10, base_height=BASE_HEIGHT)
-        tuner.set_firmware("Marlin")
-        points = tuner.get_probe_points()
-        probed_points = []
-        for point in points:
-            probed = False
-            core.send("G30 X{} Y{} S0".format(point[0], point[1]))
-            while not probed:
-                sleep(1)
-        res = []
-        for point, z in zip(points, probed_points):
-            res.append([point[0], point[1], z])
-        print res
-        tuner.set_probe_errors(res)
-        commands, before, after = tuner.calc()
-        print "Error before:", before, "Error after:", after
-        raw_input("Enter to save")
-        for command in commands:
-            print command
-            core.send(command)
-        core.send("M500")
-except KeyboardInterrupt:
-    print "Exiting"
-finally:
-    core.disconnect()
 
+    def calibrate(self):
+        self.core.recv = self.settings.parse
+        core.send("M503")
+        sleep(1)
+        self.core.recv = self.parse_point
+        try:
+            for i in range(1):
+                core.send("G28")
+                sleep(1)
+                solver = Solver(self.settings, self.optimize_for)
+                points = Solver.generate_points(10)
+                for point in points:
+                    core.send("G30 X{} Y{} S0".format(point[0], point[1]))
+                while not len(self.probed_points) == len(points):
+                    sleep(1)
+                res = []
+                for point, z in zip(points, probed_points):
+                    res.append([point[0], point[1], z])
+                solver.fill_points(res)
+                error = solver.optimize()
+                print error
+                raw_input("Enter to save")
+                for command in solver.settings.dump():
+                    print command
+                    core.send(command)
+                core.send("M500")
+        except KeyboardInterrupt:
+            print "Exiting"
+        finally:
+            core.disconnect()
+
+    def parse_point(self, x):
+        x = x[:-1]
+        m = g30.search(x)
+        if m:
+            x = float(m.group(1))
+            y = float(m.group(2))
+            z = float(m.group(3))
+            self.probed_points.append(-(z + self.probe_offset))

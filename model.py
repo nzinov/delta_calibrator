@@ -8,10 +8,11 @@ import dill
 
 class Model:
     endstops = Matrix([symbols("ex ey ez")])
+    ex, ey, ez = endstops
     radius = symbols("r")
     diagonal = symbols("d")
 
-    properties = ["endstops", "radius", "diagonal"]
+    properties = ["ex", "ey", "ez", "radius", "diagonal"]
 
     towers = Matrix([
         [-sin(pi/3) * radius, -cos(pi/3) * radius, 0],
@@ -22,12 +23,6 @@ class Model:
     position = Matrix([symbols("x y z")])
     x, y, z = position
     state = Matrix([symbols("a b c")])
-
-try:
-    with open("model.dat") as f:
-        Model = dill.load(f)
-except Exception:
-    pass
 
 def get_diag(matrix):
     return Matrix(matrix2numpy(matrix)[(0, 1, 2),(0, 1, 2)])
@@ -43,5 +38,13 @@ if __name__=="__main__":
     print(y_eq)
     Model.car_to_z = solve(equations[2].subs(Model.x, x_eq).subs(Model.y, y_eq), Model.z)[0]
     print(Model.car_to_z)
+    Model.ef_to_car = Matrix(Model.ef_to_car)
     with open("model.dat", "w") as f:
         dill.dump(Model, f)
+else:
+    try:
+        with open("model.dat") as f:
+            Model = dill.load(f)
+    except Exception:
+        pass
+

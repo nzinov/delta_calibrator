@@ -22,6 +22,11 @@ class Settings:
         self.radius = height
         self.diagonal = diagonal
 
+    def prepare(self):
+        self.ex = BASE_HEIGHT + self.height_offset + self.ex
+        self.ey = BASE_HEIGHT + self.height_offset + self.ey
+        self.ez = BASE_HEIGHT + self.height_offset + self.ez
+
     def parse(self, message):
         for comm in self.commands:
             comm = re.sub("\{(.*?)\}", r"(?P<\1>[\d.-]+)", comm)
@@ -29,10 +34,9 @@ class Settings:
             if match:
                 self.__dict__.update(match.groupdict())
 
-    def prepare(self):
-        self.endstops = (self.ex, self.ey, self.ez)
-
     def dump(self):
-        self.ex, self.ey, self.ez = self.endstops
+        self.ex = -BASE_HEIGHT - self.height_offset + self.ex
+        self.ey = -BASE_HEIGHT - self.height_offset + self.ey
+        self.ez = -BASE_HEIGHT - self.height_offset + self.ez
         for comm in self.commands:
             yield comm.format(self.__dict__)
