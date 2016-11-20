@@ -4,37 +4,44 @@ from sympy.geometry import *
 from sympy.matrices import *
 import numpy
 import scipy
+import dill
 
 class Model:
-    endstops = symbols("ex ey ez")
-    ex, ey, ez = endstops
+    endstops = Matrix([symbols("ex ey ez")])
     radius = symbols("r")
     diagonal = symbols("d")
-    height = symbols("h")
 
-    properties = ["ex", "ey", "ez", "radius", "diagonal"]
+    properties = ["endstops", "radius", "diagonal"]
 
-    towers = [
-        Point(-sin(pi/3) * (radius), -cos(pi/3) * (radius)),
-        Point(sin(pi/3) * (radius), -cos(pi/3) * (radius)),
-        Point(0, (radius))
-    ]
+    towers = Matrix([
+        [-sin(pi/3) * radius, -cos(pi/3) * radius, 0],
+        [sin(pi/3) * radius, -cos(pi/3) * radius, 0],
+        [0, radius, 0]
+    ])
 
-    x, y, z = symbols("x y z")
-    a, b, c = symbols("a b c")
+    position = Matrix([symbols("x y z")])
+    x, y, z = position
+    state = Matrix([symbols("a b c")])
 
-Model.ef_to_car = [
-    Model.height + Model.endstops[i] - (Model.diagonal**2 - Point(Model.x, Model.y).distance(Model.towers[i])**2)**0.5 - Model.z
-    for i in range(3)
-]
+try:
+    with open("model.dat") as f:
+        Model = dill.load(f)
+except Exception:
+    pass
 
-a_eq = Model.ef_to_car[0] - Model.a
-b_eq = Model.ef_to_car[1] - Model.b
-c_eq = Model.ef_to_car[2] - Model.c
-x_eq = solve(a_eq - b_eq, Model.y)
-print(x_eq)
-y_eq = solve(a_eq - b_eq, Model.y)
-print(y_eq)
-z_eq = c_eq.subs(Model.y, y_eq).subs(Model.x, x_eq)
-print(z_eq)
-Model.car_to_z = z_eq
+def get_diag(matrix):
+    return Matrix(matrix2numpy(matrix)[(0, 1, 2),(0, 1, 2)])
+
+if __name__=="__main__":
+    carriages = Model.towers + zeros(2, 3).col_join(Model.endstops - Model.state).T
+    shifts = carriages - ones(3, 1) * Model.position
+    equations = matrix2numpy(expand(get_diag(shifts * shifts.T) - ones(3, 1) * Model.diagonal**2)).flatten().tolist()
+    Model.ef_to_car = solve(equations, (Model.state))[0]
+    x_eq = solve(equations[0] - equations[1], Model.x)[0]
+    print(x_eq)
+    y_eq = solve((equations[0] + equations[1] - 2*equations[2]).subs(Model.x, x_eq), Model.y)[0]
+    print(y_eq)
+    Model.car_to_z = solve(equations[2].subs(Model.x, x_eq).subs(Model.y, y_eq), Model.z)[0]
+    print(Model.car_to_z)
+    with open("model.dat", "w") as f:
+        dill.dump(Model, f)
