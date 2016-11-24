@@ -38,6 +38,7 @@ class Calibrator:
                     while not self.probed:
                         sleep(0.1)
                 solver.fill_points(self.probed_points)
+                solver.plot()
                 error = solver.optimize()
                 print error
                 raw_input("Enter to save")

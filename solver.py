@@ -1,7 +1,9 @@
+from mpl_toolkits.mplot3d.axes3d import Axes3D
 from scipy.optimize import curve_fit
 from sympy import *
 from model import Model
 from settings import Settings
+from matplotlib import pyplot
 import numpy
 
 class Solver:
@@ -35,9 +37,10 @@ class Solver:
 
 
     def fill_points(self, points):
+        self.source_points = numpy.array(points)
         f = self.fixate(Model.ef_to_car, ["position"])
         try:
-            self.points = [f([x, y, z]) for x, y, z in points]
+            self.points = numpy.array([f([x, y, z]) for x, y, z in points])
         except ValueError:
             print "Unreachable point"
 
@@ -46,6 +49,14 @@ class Solver:
         def g(x, *args):
             return [f(el, *args) for el in x]
         return g
+
+    def plot(self):
+        plt = pyplot.subplot(1, 1, 1, projection="3d")
+        plt.set_xlim(-60, 60)
+        plt.set_ylim(-60, 60)
+        plt.plot_trisurf(self.source_points[:, 0], self.source_points[:, 1], self.source_points[:,2])
+        plt.plot_trisurf(self.source_points[:, 0], self.source_points[:, 1], [0]*len(self.source_points))
+        pyplot.show()
 
 
     def target_jacobian(self):
@@ -57,7 +68,7 @@ class Solver:
 
     def optimize(self):
         param = [getattr(self.settings, prop) for prop in self.optimize_for]
-        popt, pconv = curve_fit(self.target_function(), self.points, [0]*len(self.points), param) 
+        popt, pconv = curve_fit(self.target_function(), self.points, [0]*len(self.points), param, jac=self.target_jacobian()) 
         for prop, val in zip(self.optimize_for, popt):
             setattr(self.settings, prop, val)
         return numpy.diag(pconv)
