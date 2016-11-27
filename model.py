@@ -29,8 +29,11 @@ def get_diag(matrix):
 
 if __name__=="__main__":
     carriages = Model.towers + zeros(2, 3).col_join(Model.endstops - Model.state).T
+    print carriages
     shifts = carriages - ones(3, 1) * Model.position
-    equations = matrix2numpy(expand(get_diag(shifts * shifts.T) - ones(3, 1) * Model.diagonal**2)).flatten().tolist()
+    print shifts
+    equations = matrix2numpy(get_diag(shifts * shifts.T) - ones(3, 1) * Model.diagonal**2).flatten().tolist()
+    print equations
     Model.ef_to_car = solve(equations, (Model.state))[0]
     x_eq = solve(equations[0] - equations[1], Model.x)[0]
     print(x_eq)
