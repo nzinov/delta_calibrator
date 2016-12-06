@@ -7,7 +7,8 @@ from matplotlib import pyplot
 import numpy
 
 class Solver:
-    def __init__(self, settings, optimize_for, probe_radius=60, n=10):
+    def __init__(self, settings, optimize_for, probe_radius=80, n=10):
+        settings.prepare()
         self.optimize_for = optimize_for
         self.probe_radius = probe_radius
         self.point_number = n

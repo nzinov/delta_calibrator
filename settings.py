@@ -23,17 +23,15 @@ class Settings:
         self.parsed = 0
 
     def prepare(self):
-        self.ex = BASE_HEIGHT + self.height_offset + self.offset_x
-        self.ey = BASE_HEIGHT + self.height_offset + self.offset_y
-        self.ez = BASE_HEIGHT + self.height_offset + self.offset_z
-        print self.ex, self.ey, self.ez, self.height_offset
+        self.ex = BASE_HEIGHT + self.height_offset - self.offset_x
+        self.ey = BASE_HEIGHT + self.height_offset - self.offset_y
+        self.ez = BASE_HEIGHT + self.height_offset - self.offset_z
 
     def parse(self, message):
         for comm in self.commands:
             comm = re.sub(" ", r".*?", re.sub(r"\{(.*?)\}", r"(?P<\1>[\d.-]+)", comm))
             match = re.search(comm, message[:-1])
             if match:
-                print comm
                 self.parsed += 1
                 d = match.groupdict()
                 for k, v in d.items():
@@ -41,16 +39,14 @@ class Settings:
                 self.__dict__.update(d)
 
     def dump(self):
-        print self.ex, self.ey, self.ez
-        self.offset_x = -BASE_HEIGHT - self.height_offset + self.ex
-        self.offset_y = -BASE_HEIGHT - self.height_offset + self.ey
-        self.offset_z = -BASE_HEIGHT - self.height_offset + self.ez
+        self.offset_x = BASE_HEIGHT + self.height_offset - self.ex
+        self.offset_y = BASE_HEIGHT + self.height_offset - self.ey
+        self.offset_z = BASE_HEIGHT + self.height_offset - self.ez
         d = max(self.offset_x, self.offset_y, self.offset_z)
-        self.height_offset += d
+        self.height_offset -= d
         self.offset_x -= d
         self.offset_y -= d
         self.offset_z -= d
-        print self.offset_x, self.offset_y, self.offset_z, self.height_offset
         
         for comm in self.commands:
             yield re.sub(r"\{(.*?)\}", r"{\1:.2f}", comm).format(**self.__dict__)

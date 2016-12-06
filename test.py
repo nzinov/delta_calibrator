@@ -3,18 +3,24 @@ from solver import Solver
 from sympy import *
 import inspect
 import numpy
-s1 = Settings()
-s1.prepare()
-solver = Solver(s1, ["ex", "ey", "ez", "radius"])
-s = Settings(offset_x=10)
-s.prepare()
-mod = Solver(s, [])
-probe = solver.generate_points(10)
-mod.fill_points([(x, y, numpy.random.rand()*0.1) for x, y in probe])
-solver.points = mod.points
-z = solver.target_function()(mod.points, solver.settings.ex, solver.settings.ey, solver.settings.ez, solver.settings.radius)
-solver.source_points = numpy.array([[x[0], x[1], z] for x, z in zip(probe, z)])
-solver.plot()
-print solver.optimize()
-for el in solver.settings.dump():
-    print el
+
+class Printer:
+    def __init__(self, real_settings, prog_settings):
+        self.real = Solver(real_settings, [])
+        self.prog = Solver(prog_settings, [])
+
+    def probe(self, x, y):
+        self.real.fill_points([[x, y, 0]])
+        return self.prog.target_function()(self.real.points)[0]
+
+    def dump(self):
+        print "Real settings"
+        for el in self.real.settings.dump():
+            print el
+        print "Prog settings"
+        for el in self.prog.settings.dump():
+            print el
+
+p = Printer(Settings(), Settings(-1, -1, -1))
+p.dump()
+print p.probe(0, 0)
