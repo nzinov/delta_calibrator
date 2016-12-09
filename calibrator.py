@@ -65,5 +65,5 @@ class Calibrator:
             self.probed = True
 
 if __name__ == "__main__":
-    calibrator = Calibrator(["radius"])
+    calibrator = Calibrator(["ex", "ey", "ez", "radius"])
     calibrator.calibrate()
