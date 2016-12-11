@@ -21,6 +21,9 @@ class Printer:
         for el in self.prog.settings.dump():
             print el
 
-p = Printer(Settings(), Settings(-1, -1, -1))
-p.dump()
-print p.probe(0, 0)
+p = Printer(Settings(), Settings(-1, -1, 0))
+solver = Solver(p.prog.settings, ["hx", "hy", "hx"])
+solver.fill_points([(x, y, p.probe(x, y)) for x, y in solver.generate_points(10)])
+solver.optimize()
+for el in solver.settings.dump():
+    print el

@@ -12,7 +12,7 @@ class Settings:
         "M851 Z{probe_offset}"
     ]
 
-    def __init__(self, offset_x=0, offset_y=0, offset_z=0, radius=106, height=185.1, diagonal=215):
+    def __init__(self, offset_x=0, offset_y=0, offset_z=0, radius=106, diagonal=215):
         self.offset_x = offset_x
         self.offset_y = offset_y
         self.offset_z = offset_z
@@ -20,12 +20,13 @@ class Settings:
         self.probe_offset = 0
         self.radius = radius
         self.diagonal = diagonal
-        self.parsed = 0
+        self.parsed = 0 #TODO: is it nessesary?
 
     def prepare(self):
-        self.ex = BASE_HEIGHT + self.height_offset - self.offset_x
-        self.ey = BASE_HEIGHT + self.height_offset - self.offset_y
-        self.ez = BASE_HEIGHT + self.height_offset - self.offset_z
+        self.hx = BASE_HEIGHT - self.offset_x + self.height_offset
+        self.hy = BASE_HEIGHT - self.offset_y + self.height_offset
+        self.hz = BASE_HEIGHT - self.offset_z + self.height_offset
+        self.homed = BASE_HEIGHT + self.height_offset
 
     def parse(self, message):
         for comm in self.commands:
@@ -39,9 +40,10 @@ class Settings:
                 self.__dict__.update(d)
 
     def dump(self):
-        self.offset_x = BASE_HEIGHT + self.height_offset - self.ex
-        self.offset_y = BASE_HEIGHT + self.height_offset - self.ey
-        self.offset_z = BASE_HEIGHT + self.height_offset - self.ez
+        self.height_offset = self.homed - BASE_HEIGHT
+        self.offset_x = BASE_HEIGHT - self.hx + self.height_offset
+        self.offset_y = BASE_HEIGHT - self.hy + self.height_offset
+        self.offset_z = BASE_HEIGHT - self.hz + self.height_offset
         d = max(self.offset_x, self.offset_y, self.offset_z)
         self.height_offset -= d
         self.offset_x -= d

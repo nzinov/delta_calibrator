@@ -47,6 +47,7 @@ class Calibrator:
                     print command
                 raw_input("Enter to save")
                 for command in solver.settings.dump():
+                    print command
                     self.core.send(command)
                 self.core.send("M500")
         except KeyboardInterrupt:
@@ -65,5 +66,5 @@ class Calibrator:
             self.probed = True
 
 if __name__ == "__main__":
-    calibrator = Calibrator(["ex", "ey", "ez", "radius"])
+    calibrator = Calibrator(["hx", "hy", "hz", "radius"])
     calibrator.calibrate()
