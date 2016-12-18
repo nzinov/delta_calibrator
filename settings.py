@@ -23,9 +23,9 @@ class Settings:
         self.parsed = 0 #TODO: is it nessesary?
 
     def prepare(self):
-        self.hx = BASE_HEIGHT - self.offset_x + self.height_offset
-        self.hy = BASE_HEIGHT - self.offset_y + self.height_offset
-        self.hz = BASE_HEIGHT - self.offset_z + self.height_offset
+        self.hx = BASE_HEIGHT + self.offset_x + self.height_offset
+        self.hy = BASE_HEIGHT + self.offset_y + self.height_offset
+        self.hz = BASE_HEIGHT + self.offset_z + self.height_offset
         self.homed = BASE_HEIGHT + self.height_offset
 
     def parse(self, message):
@@ -41,9 +41,9 @@ class Settings:
 
     def dump(self):
         self.height_offset = self.homed - BASE_HEIGHT
-        self.offset_x = BASE_HEIGHT - self.hx + self.height_offset
-        self.offset_y = BASE_HEIGHT - self.hy + self.height_offset
-        self.offset_z = BASE_HEIGHT - self.hz + self.height_offset
+        self.offset_x = self.homed - self.hx
+        self.offset_y = self.homed - self.hy
+        self.offset_z = self.homed - self.hz
         d = max(self.offset_x, self.offset_y, self.offset_z)
         self.height_offset -= d
         self.offset_x -= d
