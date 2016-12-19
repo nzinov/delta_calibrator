@@ -43,6 +43,7 @@ class Calibrator:
                 solver.plot()
                 error = solver.optimize()
                 print error
+                solver.interactive()
                 for command in solver.settings.dump():
                     print command
                 raw_input("Enter to save")

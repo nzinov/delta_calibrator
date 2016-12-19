@@ -4,6 +4,7 @@ from sympy import *
 from model import Model
 from settings import Settings
 from matplotlib import pyplot
+from matplotlib.widgets import Slider
 import numpy
 
 class Solver:
@@ -73,3 +74,40 @@ class Solver:
         for prop, val in zip(self.optimize_for, popt):
             setattr(self.settings, prop, val)
         return numpy.diag(pconv)
+
+    def interactive(self):
+        #self.optimize()
+        fig = pyplot.figure()
+        plt = fig.add_subplot(1, 1, 1, projection="3d")
+        plt.set_xlim(-60, 60)
+        plt.set_ylim(-60, 60)
+        pos = 0
+        sliders = []
+        axes = []
+        def update(val):
+            values = [el.val for el in sliders]
+            for prop, val in zip(self.optimize_for, values):
+                setattr(self.settings, prop, val)
+            plt.clear()
+            plt.plot_trisurf(self.source_points[:, 0], self.source_points[:, 1], [0]*len(self.source_points))
+            plt.plot_trisurf(self.source_points[:, 0], self.source_points[:, 1], self.target_function()(self.points, *values))
+            fig.canvas.draw_idle()
+        for el in self.optimize_for:
+            axis = pyplot.axes([0.85, pos, 0.15, 0.05])
+            axes.append(axis)
+            pos += 0.05
+            val = getattr(self.settings, el)
+            sliders.append(Slider(axis, el, val - 10, val + 10, val))
+            sliders[-1].on_changed(update)
+        def on_key(event):
+            keys = {"left": -1, "right": 1, "up": 0.1, "down": -0.1}
+            if event.key in keys:
+                try:
+                    sl = sliders[axes.index(event.inaxes)]
+                    sl.set_val(sl.val + keys[event.key])
+                except ValueError:
+                    pass
+        fig.canvas.mpl_connect('key_press_event', on_key)
+        update(0)
+        pyplot.show()
+
