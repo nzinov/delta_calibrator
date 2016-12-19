@@ -1,4 +1,5 @@
 import re
+import numpy as np
 
 
 BASE_HEIGHT = 185.1
@@ -23,10 +24,11 @@ class Settings:
         self.parsed = 0 #TODO: is it nessesary?
 
     def prepare(self):
-        self.hx = BASE_HEIGHT + self.offset_x + self.height_offset
-        self.hy = BASE_HEIGHT + self.offset_y + self.height_offset
-        self.hz = BASE_HEIGHT + self.offset_z + self.height_offset
         self.homed = BASE_HEIGHT + self.height_offset
+        self.hx = self.homed + self.offset_x
+        self.hy = self.homed + self.offset_y
+        self.hz = self.homed + self.offset_z
+        self.offset = np.array((self.offset_x, self.offset_y, self.offset_z))
 
     def parse(self, message):
         for comm in self.commands:
@@ -41,14 +43,13 @@ class Settings:
 
     def dump(self):
         self.height_offset = self.homed - BASE_HEIGHT
-        self.offset_x = self.homed - self.hx
-        self.offset_y = self.homed - self.hy
-        self.offset_z = self.homed - self.hz
-        d = max(self.offset_x, self.offset_y, self.offset_z)
-        self.height_offset -= d
-        self.offset_x -= d
-        self.offset_y -= d
-        self.offset_z -= d
+        home_position = np.array((self.hx, self.hy, self.hz))
+        endstops = home_position - self.offset
+        offset = self.homed - endstops
+        d = max(offset)
+        self.height_offset += d
+        offset -= d
+        self.offset_x, self.offset_y, self.offset_z = offset
         
         for comm in self.commands:
             yield re.sub(r"\{(.*?)\}", r"{\1:.2f}", comm).format(**self.__dict__)
