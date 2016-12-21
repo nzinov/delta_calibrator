@@ -47,7 +47,7 @@ class Settings:
         endstops = home_position - self.offset
         offset = self.homed - endstops
         d = max(offset)
-        self.height_offset += d
+        self.height_offset -= d
         offset -= d
         self.offset_x, self.offset_y, self.offset_z = offset
         
